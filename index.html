@@ -1,0 +1,568 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Job Search - RAG System</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .header {
+            text-align: center;
+            color: white;
+            margin-bottom: 40px;
+            padding: 40px 20px;
+        }
+
+        .header h1 {
+            font-size: 3rem;
+            margin-bottom: 10px;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.2);
+        }
+
+        .subtitle {
+            font-size: 1.2rem;
+            opacity: 0.9;
+        }
+
+        .search-section {
+            background: white;
+            border-radius: 20px;
+            padding: 30px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            margin-bottom: 30px;
+        }
+
+        .search-form {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+
+        .search-input-group {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+
+        .search-input {
+            flex: 1;
+            min-width: 300px;
+            padding: 15px 20px;
+            font-size: 1rem;
+            border: 2px solid #e0e0e0;
+            border-radius: 10px;
+            outline: none;
+            transition: border-color 0.3s;
+        }
+
+        .search-input:focus {
+            border-color: #667eea;
+        }
+
+        .top-k-select {
+            padding: 15px;
+            font-size: 1rem;
+            border: 2px solid #e0e0e0;
+            border-radius: 10px;
+            outline: none;
+            background: white;
+            cursor: pointer;
+            min-width: 120px;
+        }
+
+        .search-button {
+            padding: 15px 30px;
+            font-size: 1.1rem;
+            font-weight: 600;
+            color: white;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border: none;
+            border-radius: 10px;
+            cursor: pointer;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+
+        .search-button:hover:not(:disabled) {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+        }
+
+        .search-button:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+
+        .example-queries {
+            margin-top: 25px;
+            padding-top: 25px;
+            border-top: 1px solid #e0e0e0;
+        }
+
+        .example-title {
+            font-size: 0.9rem;
+            color: #666;
+            margin-bottom: 15px;
+        }
+
+        .example-buttons {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+
+        .example-button {
+            padding: 8px 16px;
+            font-size: 0.9rem;
+            color: #667eea;
+            background: #f0f0ff;
+            border: 1px solid #667eea;
+            border-radius: 20px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .example-button:hover {
+            background: #667eea;
+            color: white;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 40px;
+            color: white;
+        }
+
+        .spinner {
+            border: 4px solid rgba(255, 255, 255, 0.3);
+            border-top: 4px solid white;
+            border-radius: 50%;
+            width: 50px;
+            height: 50px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 20px;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .error-message {
+            background: #fee;
+            color: #c33;
+            padding: 15px 20px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .results {
+            display: flex;
+            flex-direction: column;
+            gap: 30px;
+        }
+
+        .ai-response {
+            background: white;
+            border-radius: 20px;
+            padding: 30px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+        }
+
+        .ai-response h2 {
+            color: #333;
+            margin-bottom: 20px;
+            font-size: 1.5rem;
+        }
+
+        .ai-response-content {
+            color: #555;
+            line-height: 1.8;
+            white-space: pre-wrap;
+        }
+
+        .jobs-section {
+            background: white;
+            border-radius: 20px;
+            padding: 30px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+        }
+
+        .jobs-section h2 {
+            color: #333;
+            margin-bottom: 25px;
+            font-size: 1.5rem;
+        }
+
+        .jobs-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+            gap: 20px;
+        }
+
+        .job-card {
+            border: 2px solid #e0e0e0;
+            border-radius: 15px;
+            padding: 20px;
+            transition: all 0.3s;
+        }
+
+        .job-card:hover {
+            border-color: #667eea;
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.2);
+            transform: translateY(-3px);
+        }
+
+        .job-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: start;
+            gap: 10px;
+            margin-bottom: 15px;
+        }
+
+        .job-title {
+            color: #333;
+            font-size: 1.2rem;
+            flex: 1;
+        }
+
+        .similarity-badge {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 5px 12px;
+            border-radius: 20px;
+            font-size: 0.85rem;
+            font-weight: 600;
+            white-space: nowrap;
+        }
+
+        .job-meta {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            font-size: 0.95rem;
+            color: #666;
+            margin-bottom: 15px;
+        }
+
+        .job-meta p {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .job-description {
+            color: #555;
+            line-height: 1.6;
+            font-size: 0.95rem;
+            margin-bottom: 15px;
+        }
+
+        .job-tags {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            margin-bottom: 15px;
+        }
+
+        .tag {
+            background: #f0f0ff;
+            color: #667eea;
+            padding: 5px 12px;
+            border-radius: 15px;
+            font-size: 0.85rem;
+        }
+
+        .apply-button {
+            display: block;
+            width: 100%;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 12px 20px;
+            border-radius: 8px;
+            text-decoration: none;
+            text-align: center;
+            font-weight: 600;
+            transition: transform 0.2s;
+        }
+
+        .apply-button:hover {
+            transform: translateY(-2px);
+        }
+
+        .hidden {
+            display: none;
+        }
+
+        @media (max-width: 768px) {
+            .header h1 {
+                font-size: 2rem;
+            }
+
+            .search-input-group {
+                flex-direction: column;
+            }
+
+            .search-input {
+                min-width: 100%;
+            }
+
+            .jobs-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header class="header">
+            <h1>🔍 AI Job Search</h1>
+            <p class="subtitle">Powered by RAG & OpenAI</p>
+        </header>
+
+        <div class="search-section">
+            <form id="searchForm" class="search-form">
+                <div class="search-input-group">
+                    <input
+                        type="text"
+                        id="searchInput"
+                        class="search-input"
+                        placeholder="What kind of job are you looking for?"
+                        required
+                    />
+                    <select id="topKSelect" class="top-k-select">
+                        <option value="3">Top 3</option>
+                        <option value="5" selected>Top 5</option>
+                        <option value="10">Top 10</option>
+                    </select>
+                </div>
+                <button type="submit" class="search-button" id="searchButton">
+                    Search Jobs
+                </button>
+            </form>
+
+            <div class="example-queries">
+                <p class="example-title">Try these examples:</p>
+                <div class="example-buttons">
+                    <button class="example-button" data-query="Show me data analyst jobs in Brisbane">Show me data analyst jobs in Brisbane</button>
+                    <button class="example-button" data-query="Senior developer positions with high salary">Senior developer positions with high salary</button>
+                    <button class="example-button" data-query="Business analyst roles in government">Business analyst roles in government</button>
+                    <button class="example-button" data-query="Full-time software engineering jobs">Full-time software engineering jobs</button>
+                    <button class="example-button" data-query="Remote IT positions">Remote IT positions</button>
+                </div>
+            </div>
+        </div>
+
+        <div id="errorMessage" class="error-message hidden">
+            <span>⚠️</span>
+            <span id="errorText"></span>
+        </div>
+
+        <div id="loadingSection" class="loading hidden">
+            <div class="spinner"></div>
+            <p>Searching through jobs with AI...</p>
+        </div>
+
+        <div id="resultsSection" class="results hidden">
+            <div class="ai-response">
+                <h2>💡 AI Insights</h2>
+                <div id="aiResponseContent" class="ai-response-content"></div>
+            </div>
+
+            <div class="jobs-section">
+                <h2>📋 Matching Jobs (<span id="jobCount">0</span>)</h2>
+                <div id="jobsGrid" class="jobs-grid"></div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const API_URL = 'http://localhost:5000';
+        
+        const searchForm = document.getElementById('searchForm');
+        const searchInput = document.getElementById('searchInput');
+        const topKSelect = document.getElementById('topKSelect');
+        const searchButton = document.getElementById('searchButton');
+        const exampleButtons = document.querySelectorAll('.example-button');
+        const errorMessage = document.getElementById('errorMessage');
+        const errorText = document.getElementById('errorText');
+        const loadingSection = document.getElementById('loadingSection');
+        const resultsSection = document.getElementById('resultsSection');
+        const aiResponseContent = document.getElementById('aiResponseContent');
+        const jobCount = document.getElementById('jobCount');
+        const jobsGrid = document.getElementById('jobsGrid');
+
+        // Example button click handlers
+        exampleButtons.forEach(button => {
+            button.addEventListener('click', () => {
+                searchInput.value = button.dataset.query;
+            });
+        });
+
+        // Form submit handler
+        searchForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const query = searchInput.value.trim();
+            const topK = parseInt(topKSelect.value);
+
+            if (!query) {
+                showError('Please enter a search query');
+                return;
+            }
+
+            await searchJobs(query, topK);
+        });
+
+        async function searchJobs(query, topK) {
+            // Hide previous results and errors
+            hideError();
+            resultsSection.classList.add('hidden');
+            
+            // Show loading
+            loadingSection.classList.remove('hidden');
+            searchButton.disabled = true;
+            searchButton.textContent = 'Searching...';
+
+            try {
+                const response = await fetch(`${API_URL}/api/search`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ query, top_k: topK })
+                });
+
+                if (!response.ok) {
+                    throw new Error('Failed to fetch results from API');
+                }
+
+                const data = await response.json();
+
+                if (data.success) {
+                    displayResults(data.data);
+                } else {
+                    showError('Failed to get results. Please try again.');
+                }
+
+            } catch (error) {
+                console.error('Search error:', error);
+                showError('Failed to connect to the server. Make sure the API is running on port 5000.');
+            } finally {
+                loadingSection.classList.add('hidden');
+                searchButton.disabled = false;
+                searchButton.textContent = 'Search Jobs';
+            }
+        }
+
+        function displayResults(data) {
+            // Display AI response
+            aiResponseContent.textContent = data.ai_response;
+
+            // Display job count
+            jobCount.textContent = data.total_jobs_found;
+
+            // Display jobs
+            jobsGrid.innerHTML = '';
+            data.jobs.forEach(job => {
+                const jobCard = createJobCard(job);
+                jobsGrid.appendChild(jobCard);
+            });
+
+            // Show results
+            resultsSection.classList.remove('hidden');
+        }
+
+        function createJobCard(job) {
+            const card = document.createElement('div');
+            card.className = 'job-card';
+
+            const similarityPercent = (job.similarity_score * 100).toFixed(0);
+            const description = job.description ? (job.description.substring(0, 200) + '...') : 'No description available';
+            
+            // Helper function to safely get string values
+            const safeValue = (value, defaultValue = 'N/A') => {
+                return value && value !== 'NA' && value !== null ? value : defaultValue;
+            };
+
+            card.innerHTML = `
+                <div class="job-header">
+                    <h3 class="job-title">${escapeHtml(safeValue(job.job_title, 'Untitled Position'))}</h3>
+                    <span class="similarity-badge">${similarityPercent}% match</span>
+                </div>
+                
+                <div class="job-meta">
+                    <p><span>🏢</span> ${escapeHtml(safeValue(job.company_name, 'Company Name Not Listed'))}</p>
+                    <p><span>📍</span> ${escapeHtml(safeValue(job.location, 'Location Not Specified'))}</p>
+                    ${job.salary && job.salary !== 'NA' && job.salary !== null ? `<p><span>💰</span> ${escapeHtml(job.salary)}</p>` : ''}
+                    <p><span>⏰</span> ${escapeHtml(safeValue(job.job_type, 'Not Specified'))}</p>
+                </div>
+
+                <div class="job-description">
+                    ${escapeHtml(description)}
+                </div>
+
+                <div class="job-tags">
+                    ${job.industry_type && job.industry_type !== null ? `<span class="tag">${escapeHtml(job.industry_type)}</span>` : ''}
+                    ${job.sub_classification && job.sub_classification !== null ? `<span class="tag">${escapeHtml(job.sub_classification)}</span>` : ''}
+                </div>
+
+                <a href="${escapeHtml(safeValue(job.job_url, '#'))}" target="_blank" rel="noopener noreferrer" class="apply-button">
+                    View Job →
+                </a>
+            `;
+
+            return card;
+        }
+
+        function showError(message) {
+            errorText.textContent = message;
+            errorMessage.classList.remove('hidden');
+        }
+
+        function hideError() {
+            errorMessage.classList.add('hidden');
+        }
+
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+
+        // Check API health on page load
+        window.addEventListener('load', async () => {
+            try {
+                const response = await fetch(`${API_URL}/api/health`);
+                if (response.ok) {
+                    console.log('✅ API is healthy');
+                } else {
+                    showError('Warning: API server is not responding. Make sure to start it with: python api.py');
+                }
+            } catch (error) {
+                showError('Warning: Cannot connect to API server. Make sure to start it with: python api.py');
+            }
+        });
+    </script>
+</body>
+</html>
