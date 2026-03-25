@@ -315,9 +315,6 @@ python api.py
 
 Feel free to submit issues and enhancement requests!
 
-## 📄 License
-
-MIT License - feel free to use this project for your own purposes.
 
 ## 🙏 Acknowledgments
 
@@ -325,10 +322,7 @@ MIT License - feel free to use this project for your own purposes.
 - FAISS for vector similarity search
 - React team for the amazing frontend framework
 - AWS Amplify for easy deployment
-
-## 📧 Support
-
-For issues or questions, please open a GitHub issue or contact the maintainer.
+.
 
 ---
 
